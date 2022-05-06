@@ -1,0 +1,32 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.1.32319.34
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TwilioFlow2Mermaid.App", "TwilioFlow2Mermaid.App\TwilioFlow2Mermaid.App.csproj", "{7E0E819D-5CF4-41E1-B2AD-3D4E55345262}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "code", "code", "{D9C55B6B-810B-42AD-979D-9A6846155A59}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docs", "docs", "{8FADAB10-F0BF-45DE-BD16-99AF13F68AF3}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{7E0E819D-5CF4-41E1-B2AD-3D4E55345262}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7E0E819D-5CF4-41E1-B2AD-3D4E55345262}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7E0E819D-5CF4-41E1-B2AD-3D4E55345262}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7E0E819D-5CF4-41E1-B2AD-3D4E55345262}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{7E0E819D-5CF4-41E1-B2AD-3D4E55345262} = {D9C55B6B-810B-42AD-979D-9A6846155A59}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {7337531B-0760-4336-9B09-E8BA9AA516B2}
+	EndGlobalSection
+EndGlobal
