@@ -8,5 +8,5 @@ Convert Twilio Flow to Mermaid diagram, which utilize mermaid to make widgets pl
 docker build -f Dockerfile -t tf2m:1.1 .
 
 # run docker
-docker run -it -v C:\work\TwilioFlow\:/data tf2m:1.1 "TwilioFlow2Mermaid.App.dll" --files /data/giftcard.json 
+docker run -it -v C:\work\TwilioFlow\:/data tf2m:1.1 --files ./giftcard.json ./flow2.json --spreadleafs --endleafs play_tech_difficulties endcall
 ```
