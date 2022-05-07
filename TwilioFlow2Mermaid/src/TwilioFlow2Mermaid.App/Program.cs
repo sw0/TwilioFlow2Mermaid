@@ -5,54 +5,86 @@ using TwilioFlow2Mermaid.App;
 // Create some options:
 var filesOption = new Option<string[]>(
         "--files",
-        //getDefaultValue: () => new string[0], 
-        description: "Required files name option, like --files /data/flow1.json /data/flow2.json");
+        description: "file(s) name option, like --files ./flow1.json flow2.json");
 filesOption.AllowMultipleArgumentsPerToken = true;
 filesOption.IsRequired = true;
 
-var spreadEndLeafsOption = new Option<bool>(
-        "--spreadleafs",
-        "An flag to indicates wheather processing leaf nodes spreadly, works with option --endleafs");
-var endingLeafs = new Option<string[]>(
-        "--endleafs",
-        "required when --spreadleafs is true, case-sensitive flow widget names");
-endingLeafs.AllowMultipleArgumentsPerToken = true;
+var noSpreadsOption = new Option<bool>(
+        "--nospreads", //new string[] { "-ns", "--nospreads" },
+        getDefaultValue: () => false,
+        "if true, --spreads would get ignored");
+
+var useIdOption = new Option<bool>(
+        "--useid", 
+        getDefaultValue: () => false,
+        "if true, use id for node instead of widget name in markdown file");
+
+//optional
+var spreadNodesOption = new Option<string[]>(
+        "--spreads",
+        "case-sensitive flow widget names to be treated individually by appending a <number> suffix");
+spreadNodesOption.AllowMultipleArgumentsPerToken = true;
+
+//optional
+var startNodesOption = new Option<string[]>(
+        "--starts",
+        "specify the nodes as start nodes");
+startNodesOption.AllowMultipleArgumentsPerToken = true;
+
+//optional
+var endNodesOption = new Option<string[]>(
+        "--ends",
+        "specify the nodes to be treated as ending nodes");
+spreadNodesOption.AllowMultipleArgumentsPerToken = true;
 
 // Add the options to a root command:
 var rootCommand = new RootCommand
 {
     filesOption,
-    spreadEndLeafsOption,
-    endingLeafs
+    spreadNodesOption,
+    startNodesOption,
+    endNodesOption,
+    noSpreadsOption,
+    useIdOption
 };
 
 rootCommand.Description = "Twilio Studio Flow to Mermaid markdown";
 
-rootCommand.SetHandler((string[] files, bool spread, string[] leafs) =>
+rootCommand.SetHandler((string[] files, string[] spreads, string[] starts, string[] ends, bool noSpreads, bool useId) =>
 {
     const string dirData = "/data/";
 
-    Console.WriteLine($"files: \r\n\t{string.Join("\r\n\t", files)}");
-    Console.WriteLine($"spreadleafs is: {spread}");
-    Console.WriteLine($"endleafs is: {string.Join(' ', leafs)}");
+    Console.WriteLine($"Found {files.Length} files");
 
     for (int i = 0; i < files.Length; i++)
     {
-        files[i] = Path.Combine(dirData, files[i].Replace('\\','/'));
+        files[i] = Path.Combine(dirData, files[i].Replace('\\', '/'));
     }
+
+    var settings = new FlowConvertSettings
+    {
+        NodesAsEnding = spreads,
+        StartNodes = starts,
+        EndNodes = ends, 
+        NoSpreads = noSpreads,
+        UseId = useId
+    };
 
     foreach (var file in files)
     {
-        var str = Processor.ConvertToMermaid(file, spread, leafs);
+        var str = Processor.ConvertToMermaid(file, settings);
 
-        //Console.WriteLine(str);
+        if (str == null)
+        {
+            continue;
+        }
 
-        var filename = Path.GetFileNameWithoutExtension(file);
-        var file2save = Path.Combine(dirData, filename + ".md");//@$"/data/{filename}.md";
+        var filename = Path.GetFileNameWithoutExtension(file) + ".md";
+        var file2save = Path.Combine(dirData, filename);
         try
         {
             File.WriteAllText(file2save, str);
-            Console.WriteLine($"File {file2save} is saved.");
+            Console.WriteLine($"File {filename} is saved.");
         }
         catch (global::System.Exception ex)
         {
@@ -60,7 +92,7 @@ rootCommand.SetHandler((string[] files, bool spread, string[] leafs) =>
             Console.WriteLine(ex.ToString());
         }
     }
-}, filesOption, spreadEndLeafsOption, endingLeafs);
+}, filesOption, spreadNodesOption, startNodesOption, endNodesOption, noSpreadsOption, useIdOption);
 
 // Parse the incoming args and invoke the handler
 return rootCommand.Invoke(args);
