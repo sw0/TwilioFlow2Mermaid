@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "TwilioFlow2Mermaid.App": {
+      "commandName": "Project",
+      "commandLineArgs": " -i c:\\work\\twilio\\giftcard.json -o c:/work/docker/  --starts check_creditrating play_balance"
+    }
+  }
+}

@@ -22,6 +22,11 @@ namespace TwilioFlow2Mermaid.App
 
         public string[] EndNodes { get; set; } = new string[0];
 
+        /// <summary>
+        /// if start nodes is specificed, by default, it will generate one file for each start node.
+        /// </summary>
+        public bool IndividualFilePerStartNode { get; set; } = true;
+
         public void Normalize()
         {
             StartNodes ??= Enumerable.Empty<string>().ToArray();
@@ -47,63 +52,60 @@ namespace TwilioFlow2Mermaid.App
         /// </summary>
         private static HashSet<string> NoteTypeOccurrence = new HashSet<string>();
         /// <summary>
-        /// 
+        /// returns a array of KeyValuePair, key is start node name, value is the converted content.
         /// </summary>
         /// <param name="file"></param>
         /// <param name="spreadEndingLeafs"></param>
         /// <param name="endingLeafs">some widget is really common, make it to be single ones on graph, like ending widgets or fail widgets</param>
         /// <returns></returns>
-        public static string? ConvertToMermaid(string file, FlowConvertSettings settings)
+        public static IEnumerable<KeyValuePair<string, string>> ConvertToMermaid(string file, FlowConvertSettings settings)
         {
             settings.Normalize();
 
-            Flow? flow = null;
+            var flow = new Flow();
 
             try
             {
                 var json = File.ReadAllText(file);
                 flow = JsonSerializer.Deserialize<Flow>(json);
-
-                if (flow == null)
-                    return null;
+                if (flow == null) throw new Exception("failed to deserialize the file");
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                Console.WriteLine("Error: {0}", ex.Message);
-                return null;
+                throw;
             }
 
-            try
+            //flow.states.Select(x => x.name).Distinct().ToList().ForEach(n => Console.WriteLine(n));
+            var dic = flow.states.Select(x => x.name).Distinct().ToList().ToDictionary<string, string, NodeInfo>(x => x, x => new NodeInfo());
+
+
+            var allTransitions = flow.states.Where(n1 => n1.transitions != null && n1.transitions.Any())
+                .SelectMany(n1 => n1.transitions.Where(t => !string.IsNullOrWhiteSpace(t.next)));
+
+            var index = 0;
+            var numberWidth = flow.states.Count().ToString().Length;
+            foreach (var item in flow.states)
+            {
+                index++;
+                var node = dic[item.name];
+                node.ParentCount = allTransitions.Count(x => x.next == item.name);
+                node.NextCount = item.GetTransitionCount();
+                node.Id = "N" + index.ToString().PadLeft(numberWidth, '0');
+            }
+
+            Func<string, NodeInfo> info = (string name) => dic[name];
+
+            // flow.states.Select(x => x.name).Distinct().ToDictionary<string, bool>(x => false);
+
+            index = 0;
+            var nodes = settings.StartNodes.Any() ?
+                flow.states!.Where(n1 => settings.StartNodes.Contains(n1.name)).ToList() : new List<FlowNode> { flow.states.First() };
+
+            if (!settings.IndividualFilePerStartNode)
             {
                 var sb = new StringBuilder();
                 sb.AppendLine("```mermaid");
                 sb.AppendLine("graph LR");
-
-                //flow.states.Select(x => x.name).Distinct().ToList().ForEach(n => Console.WriteLine(n));
-                var dic = flow.states.Select(x => x.name).Distinct().ToList().ToDictionary<string, string, NodeInfo>(x => x, x => new NodeInfo());
-
-
-                var allTransitions = flow.states.Where(n1 => n1.transitions != null && n1.transitions.Any())
-                    .SelectMany(n1 => n1.transitions.Where(t => !string.IsNullOrWhiteSpace(t.next)));
-
-                var index = 0;
-                var numberWidth = flow.states.Count().ToString().Length;
-                foreach (var item in flow.states)
-                {
-                    index++;
-                    var node = dic[item.name];
-                    node.ParentCount = allTransitions.Count(x => x.next == item.name);
-                    node.NextCount = item.GetTransitionCount();
-                    node.Id = "N" + index.ToString().PadLeft(numberWidth, '0');
-                }
-
-                Func<string, NodeInfo> info = (string name) => dic[name];
-
-                // flow.states.Select(x => x.name).Distinct().ToDictionary<string, bool>(x => false);
-
-                index = 0;
-                var nodes = settings.StartNodes.Any() ?
-                    flow.states!.Where(n1 => settings.StartNodes.Contains(n1.name)).ToList() : flow.states;
 
                 foreach (var item in nodes)
                 {
@@ -111,12 +113,27 @@ namespace TwilioFlow2Mermaid.App
                 }
 
                 sb.AppendLine("```");
-                return sb.ToString();
+                yield return new KeyValuePair<string, string>("Trigger", sb.ToString());
             }
-            catch (Exception ex)
+            else
             {
-                Console.WriteLine(ex.ToString());
-                return string.Empty;
+                foreach (var item in nodes)
+                {
+                    var sb = new StringBuilder();
+                    sb.AppendLine("```mermaid");
+                    sb.AppendLine("graph LR");
+
+                    ProcessInternal(flow, dic, item, settings, sb, ref index);
+
+                    sb.AppendLine("```");
+                    yield return new KeyValuePair<string, string>(item.name, sb.ToString());
+
+                    //reset dic
+                    foreach (var dicItem in dic)
+                    {
+                        dicItem.Value.Processed = false;
+                    }
+                }
             }
         }
 
@@ -221,6 +238,8 @@ namespace TwilioFlow2Mermaid.App
 
     class Flow
     {
+        public const string TriggerNodeName = "Trigger";
+
         public string description { get; set; } = "";
 
         public List<FlowNode> states { get; set; } = new List<FlowNode>();
